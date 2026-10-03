@@ -57,8 +57,10 @@ def test_evaluate_forecasts_known_values():
     assert result.loc["naive", "mae_try"] == pytest.approx(2 / 3)
     assert result.loc["naive", "rmse_try"] == pytest.approx(np.sqrt(2 / 3))
     expected_log = 100 * np.array([np.log(1.1), np.log(12 / 11), 0.0])
-    assert result.loc["naive", "mae_log_pct"] == pytest.approx(np.abs(expected_log).mean())
+    assert result.loc["naive", "mae_ret_pct"] == pytest.approx(np.abs(expected_log).mean())
+    assert np.isnan(result.loc["naive", "dir_acc"])  # a zero forecast has no direction
     assert result.attrs["n"] == 3
+    assert result.attrs["up_share"] == pytest.approx(2 / 3)
 
 
 def test_evaluate_uses_common_sample_and_date_range():

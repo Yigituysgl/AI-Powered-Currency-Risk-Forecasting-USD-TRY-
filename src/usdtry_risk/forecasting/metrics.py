@@ -13,31 +13,60 @@ def mae(errors: pd.Series) -> float:
     return float(np.mean(np.abs(errors)))
 
 
+def directional_accuracy(actual: pd.Series, forecast: pd.Series) -> float:
+    """Share of days where forecast and realised return have the same sign.
+
+    A zero forecast has no direction, so those days are excluded; the result
+    is NaN when every forecast is zero.
+    """
+    has_direction = forecast != 0
+    if not has_direction.any():
+        return float("nan")
+    return float((np.sign(actual[has_direction]) == np.sign(forecast[has_direction])).mean())
+
+
+def to_price_forecast(prices: pd.Series, return_forecast: pd.Series) -> pd.Series:
+    """Price forecast for day t from a log-return forecast: P_{t-1} * exp(r_hat_t)."""
+    prev = prices.shift(1).reindex(return_forecast.index)
+    return (prev * np.exp(return_forecast)).rename(return_forecast.name)
+
+
 def evaluate_forecasts(
     prices: pd.Series,
     forecasts: dict[str, pd.Series],
     start: str | None = None,
     end: str | None = None,
 ) -> pd.DataFrame:
-    """Score forecasts on the dates where every forecast exists.
+    """Score price forecasts on the dates where every forecast exists.
 
-    Price errors are in TRY. Log errors are ln(actual / forecast) in percent,
-    which equals the realised log return minus the forecast log return and is
-    comparable across price levels.
+    ``*_try`` errors are in TRY. ``*_ret_pct`` errors are on daily log returns
+    in percent, ln(actual / forecast), which is comparable across price levels.
+    ``dir_acc`` is the directional accuracy of the implied return forecast.
     """
-    frame = pd.concat({"actual": prices, **forecasts}, axis=1).loc[start:end].dropna()
+    frame = (
+        pd.concat({"actual": prices, "prev": prices.shift(1), **forecasts}, axis=1)
+        .loc[start:end]
+        .dropna()
+    )
     if frame.empty:
         raise ValueError("no dates where all forecasts are available")
+    actual_ret = np.log(frame["actual"] / frame["prev"])
     rows = {}
     for name in forecasts:
         price_err = frame["actual"] - frame[name]
-        log_err = 100 * np.log(frame["actual"] / frame[name])
+        ret_err = 100 * np.log(frame["actual"] / frame[name])
         rows[name] = {
             "rmse_try": rmse(price_err),
             "mae_try": mae(price_err),
-            "rmse_log_pct": rmse(log_err),
-            "mae_log_pct": mae(log_err),
+            "rmse_ret_pct": rmse(ret_err),
+            "mae_ret_pct": mae(ret_err),
+            "dir_acc": directional_accuracy(actual_ret, np.log(frame[name] / frame["prev"])),
         }
     result = pd.DataFrame.from_dict(rows, orient="index")
-    result.attrs.update(n=len(frame), start=frame.index[0], end=frame.index[-1])
+    result.attrs.update(
+        n=len(frame),
+        start=frame.index[0],
+        end=frame.index[-1],
+        up_share=float((actual_ret > 0).mean()),
+    )
     return result
