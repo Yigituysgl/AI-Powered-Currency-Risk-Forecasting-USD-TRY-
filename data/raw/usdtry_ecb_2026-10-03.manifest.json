@@ -1,0 +1,16 @@
+{
+  "source": "European Central Bank, euro foreign exchange reference rates (EXR)",
+  "source_url": "https://data-api.ecb.europa.eu/service/data/EXR/D.TRY+USD.EUR.SP00.A",
+  "attribution": "Source: ECB statistics.",
+  "download_date": "2026-10-03T15:28:07+00:00",
+  "row_count": 7106,
+  "first_date": "1999-01-04",
+  "last_date": "2026-10-02",
+  "columns": {
+    "date": "ECB reference rate date (TARGET business days)",
+    "eur_try": "TRY per 1 EUR, as published by the ECB",
+    "eur_usd": "USD per 1 EUR, as published by the ECB",
+    "usd_try": "TRY per 1 USD, derived by this project as eur_try / eur_usd (not an ECB statistic)"
+  },
+  "sha256": "a3d4f77c0fa8db8d062ea19040f36c32c0b09029acec0ea49749447fc2316571"
+}
