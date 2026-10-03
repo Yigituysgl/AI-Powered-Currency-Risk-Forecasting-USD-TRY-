@@ -1,33 +1,56 @@
-# AI-Powered-Currency-Risk-Forecasting-USD-TRY-
+# USD/TRY Currency Risk & Hedging Tool
 
+Forecasting, volatility, Value at Risk and hedging analysis for USD/TRY
+exposure, built on a reproducible ECB data snapshot.
 
-This project uses Long Short-Term Memory (LSTM) deep learning models to forecast the USD/TRY exchange rate based on historical price trends. It is a complete, end-to-end machine learning pipeline including:
+Planned components:
 
-- Data cleaning & exploration
-- Feature engineering
-- Time-series supervised learning
-- Model training using PyTorch
-- Performance evaluation
+1. Reproducible data and one-day-ahead forecasts compared against naive and
+   drift baselines on the same dates
+2. Volatility forecasting and Value at Risk with backtesting
+3. Hedging simulator for a USD exposure
+4. Streamlit dashboard
 
+## Data
 
-Project Overview
+Daily ECB euro reference rates, with USD/TRY derived as EUR/TRY ÷ EUR/USD.
+**Source: ECB statistics.** See [data/README.md](data/README.md) for
+provenance, terms of use and column definitions.
 
-Currency forecasting is critical for financial analysts, businesses, and treasury departments dealing with foreign exchange exposure. This project predicts future USD/TRY rates using a sequence-based LSTM model trained on 10 years of historical exchange rate data.
+## Setup
 
----
+```bash
+pip install -r requirements.txt
+pip install -e .
+python -m pytest
+```
 
-Model Performance : 
-RMSE | 2.45 |
-MAE  | 2.22 |
+## Usage
 
-![image](https://github.com/user-attachments/assets/2fa10fd3-1ea0-4d94-b73f-f3bd2f1d069f)
+```bash
+python -m usdtry_risk.data.fetch_ecb
+python -m usdtry_risk.forecasting.evaluate_baselines --start 2023-06-19 --end 2025-05-07
+```
 
-Future Work :
+`fetch_ecb` saves a new dated snapshot; `evaluate_baselines` scores the
+baselines on the latest snapshot, optionally restricted to a date range.
 
--Integrate macroeconomic features (e.g. interest rate, CPI)
--Streamlit app for real-time forecasting
+## Results
 
+One-day-ahead forecasts on snapshot `usdtry_ecb_2026-10-03`, 6,853 forecast
+days from 1999-12-23 to 2026-10-02, all scored on the same dates. Log errors
+are ln(actual / forecast) in percent.
 
+| Forecast              | RMSE (TRY) | MAE (TRY) | RMSE (log %) | MAE (log %) |
+|-----------------------|-----------:|----------:|-------------:|------------:|
+| Naive (tomorrow = today) | 0.0892  |   0.0257  |       1.2322 |      0.5890 |
+| Drift, expanding mean |     0.0884 |    0.0251 |       1.2313 |      0.5909 |
+| Drift, 252-day mean   |     0.0888 |    0.0257 |       1.2328 |      0.5918 |
 
+## Repository layout
 
-
+- `src/usdtry_risk/data/`: ECB download, snapshot loading, log returns
+- `src/usdtry_risk/forecasting/`: baselines and error metrics
+- `tests/`: data and baseline tests, including a lookahead check
+- `notebooks/00_legacy_lstm.ipynb`: exploratory LSTM notebook; it reads data
+  from outside the repository, so its outputs are not part of the results above

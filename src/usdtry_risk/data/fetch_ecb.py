@@ -95,7 +95,7 @@ def save_snapshot(
     if csv_path.exists() and not force:
         raise FileExistsError(f"{csv_path} already exists; pass force=True to replace it")
 
-    # Fixed line endings so the hash is identical on Windows and Linux.
+    # LF line endings on every OS keep the hash identical on Windows and Linux.
     df.to_csv(csv_path, index=False, date_format="%Y-%m-%d", lineterminator="\n")
     manifest = {
         "source": "European Central Bank, euro foreign exchange reference rates (EXR)",

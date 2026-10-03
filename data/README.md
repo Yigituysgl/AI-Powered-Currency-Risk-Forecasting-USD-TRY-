@@ -52,8 +52,8 @@ This project is for research and education, not for trading or pricing.
 ## Notes on the data
 
 - Rates are a fixing taken around 14:10–14:15 CET, not a market close. On
-  days with large intraday moves (e.g. 2021-12-20) the fixing can differ from
-  closing prices by several percent.
+  days with large intraday moves the fixing can differ markedly from the
+  closing price.
 - The ECB `TRY` series starts in 1999. Rates before the 2005 redenomination
   are expressed in new lira (1 TRY = 1,000,000 old TRL).
 - Tail events such as the February 2001 float and the 2018 and 2021 crises
