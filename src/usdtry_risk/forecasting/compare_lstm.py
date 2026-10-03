@@ -11,7 +11,12 @@ import pandas as pd
 
 from usdtry_risk.data.prepare import load_snapshot, log_returns
 from usdtry_risk.forecasting.baselines import drift_forecast, naive_forecast
-from usdtry_risk.forecasting.metrics import evaluate_forecasts, to_price_forecast
+from usdtry_risk.forecasting.metrics import (
+    diebold_mariano,
+    evaluate_forecasts,
+    return_errors,
+    to_price_forecast,
+)
 from usdtry_risk.forecasting.walk_forward import walk_forward_lstm
 from usdtry_risk.seed import set_seed
 
@@ -45,6 +50,19 @@ def main() -> None:
 
     result = evaluate_forecasts(prices, forecasts)
     a = result.attrs
+    errors = return_errors(prices, forecasts)
+    if len(errors) != a["n"]:
+        raise RuntimeError("significance tests must use the same test days as the scores")
+    dm_rows = {}
+    for rival in ("naive", "drift_expanding"):
+        row = {}
+        for loss, tag in (("absolute", "abs"), ("squared", "sq")):
+            row[f"dm_{tag}"], row[f"p_{tag}"] = diebold_mariano(
+                errors["lstm"], errors[rival], loss
+            )
+        dm_rows[f"lstm vs {rival}"] = row
+    dm_table = pd.DataFrame.from_dict(dm_rows, orient="index")
+
     with pd.option_context(
         "display.float_format", "{:.4f}".format, "display.width", 160, "display.max_columns", None
     ):
@@ -53,6 +71,8 @@ def main() -> None:
         print(f"\nAll folds: {a['n']} test days, {a['start']:%Y-%m-%d} to {a['end']:%Y-%m-%d}")
         print(result[["mae_ret_pct", "rmse_ret_pct", "dir_acc"]])
         print(f"Share of up days: {a['up_share']:.4f}")
+        print("\nDiebold-Mariano tests (negative statistic: LSTM has lower loss):")
+        print(dm_table)
 
 
 if __name__ == "__main__":

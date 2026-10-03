@@ -1,6 +1,8 @@
 """Forecast error metrics on a common evaluation sample."""
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pandas as pd
 
@@ -31,6 +33,50 @@ def to_price_forecast(prices: pd.Series, return_forecast: pd.Series) -> pd.Serie
     return (prev * np.exp(return_forecast)).rename(return_forecast.name)
 
 
+def diebold_mariano(
+    errors_a: pd.Series, errors_b: pd.Series, loss: str = "squared"
+) -> tuple[float, float]:
+    """Test equal accuracy of two one-day-ahead forecasts.
+
+    Uses the Harvey-Leybourne-Newbold small-sample correction and returns the
+    statistic and a two-sided p-value from the normal approximation. A
+    negative statistic means forecast A has the lower average loss.
+    """
+    if not errors_a.index.equals(errors_b.index):
+        raise ValueError("both forecasts must be scored on the same dates")
+    loss_fn = {"squared": np.square, "absolute": np.abs}[loss]
+    d = (loss_fn(errors_a) - loss_fn(errors_b)).to_numpy()
+    n = len(d)
+    variance = np.mean((d - d.mean()) ** 2)
+    if not variance > 0:
+        raise ValueError("loss differences are constant; the test is undefined")
+    stat = d.mean() / math.sqrt(variance / n) * math.sqrt((n - 1) / n)
+    return float(stat), math.erfc(abs(stat) / math.sqrt(2))
+
+
+def _common_sample(prices, forecasts, start, end) -> pd.DataFrame:
+    """Actual, previous and forecast prices on dates where every forecast exists."""
+    frame = (
+        pd.concat({"actual": prices, "prev": prices.shift(1), **forecasts}, axis=1)
+        .loc[start:end]
+        .dropna()
+    )
+    if frame.empty:
+        raise ValueError("no dates where all forecasts are available")
+    return frame
+
+
+def return_errors(
+    prices: pd.Series,
+    forecasts: dict[str, pd.Series],
+    start: str | None = None,
+    end: str | None = None,
+) -> pd.DataFrame:
+    """Daily log-return errors in percent, ln(actual / forecast), on the common sample."""
+    frame = _common_sample(prices, forecasts, start, end)
+    return pd.DataFrame({name: 100 * np.log(frame["actual"] / frame[name]) for name in forecasts})
+
+
 def evaluate_forecasts(
     prices: pd.Series,
     forecasts: dict[str, pd.Series],
@@ -43,13 +89,7 @@ def evaluate_forecasts(
     in percent, ln(actual / forecast), which is comparable across price levels.
     ``dir_acc`` is the directional accuracy of the implied return forecast.
     """
-    frame = (
-        pd.concat({"actual": prices, "prev": prices.shift(1), **forecasts}, axis=1)
-        .loc[start:end]
-        .dropna()
-    )
-    if frame.empty:
-        raise ValueError("no dates where all forecasts are available")
+    frame = _common_sample(prices, forecasts, start, end)
     actual_ret = np.log(frame["actual"] / frame["prev"])
     rows = {}
     for name in forecasts:

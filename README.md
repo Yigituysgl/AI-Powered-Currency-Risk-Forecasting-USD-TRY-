@@ -61,8 +61,22 @@ so it has no direction. 96.4% of the LSTM forecasts are positive and their
 within-year standard deviation stays below 0.31% against 0.98% for realised
 returns: the LSTM behaves like a drift forecast. It does not beat the
 expanding-mean drift on MAE or directional accuracy; its RMSE is the lowest
-(0.9781 against 0.9813). These differences have not been tested for
-statistical significance.
+(0.9781 against 0.9813).
+
+Diebold-Mariano tests on the same 4,290 days (Harvey-Leybourne-Newbold
+correction, two-sided p-values; a negative statistic means the LSTM has the
+lower loss). The absolute-error test matches MAE, the squared-error test
+matches RMSE.
+
+| Comparison                   | DM (absolute) | p (absolute) | DM (squared) | p (squared) |
+|------------------------------|--------------:|-------------:|-------------:|------------:|
+| LSTM vs naive                |       -1.4042 |       0.1603 |      -2.3378 |      0.0194 |
+| LSTM vs drift, expanding mean |       1.2050 |       0.2282 |      -1.0616 |      0.2884 |
+
+In plain terms: the LSTM beats tomorrow = today only on squared error
+(p = 0.0194) and is not significantly different from a simple drift forecast
+on either measure, so there is no evidence it adds anything beyond the lira's
+average trend.
 
 ## Repository layout
 
