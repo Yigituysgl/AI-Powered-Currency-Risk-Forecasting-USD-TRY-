@@ -1,0 +1,2 @@
+# Snapshots are hash-checked against their manifest: never convert line endings.
+data/raw/** -text
