@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 
 import altair as alt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -18,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Streamlit Cloud runs the file directly, without installing the package.
 sys.path.insert(0, str(ROOT / "src"))
 
-from usdtry_risk.data.prepare import load_snapshot, log_returns  # noqa: E402
+from usdtry_risk.data.prepare import largest_moves, load_snapshot, log_returns  # noqa: E402
 from usdtry_risk.hedging.simulate import hedge_outcomes, summarize  # noqa: E402
 from usdtry_risk.results import load_table  # noqa: E402
 
@@ -57,22 +56,14 @@ def table(name: str, index_cols: int = 1) -> pd.DataFrame:
 
 def overview() -> None:
     p = prices()
-    returns = log_returns(p)
     st.header("USD/TRY since 1999")
     st.write(
         f"Daily ECB reference rates, {p.index[0]:%d %b %Y} to {p.index[-1]:%d %b %Y} "
         f"({len(p):,} days). Orange points mark the {N_SHOCKS} largest one-day moves."
     )
 
-    shocks = returns.abs().nlargest(N_SHOCKS).index
+    shock_frame = largest_moves(p, N_SHOCKS).reset_index()
     frame = p.rename("usd_try").rename_axis("date").reset_index()
-    shock_frame = pd.DataFrame(
-        {
-            "date": shocks,
-            "usd_try": p[shocks].to_numpy(),
-            "move_pct": 100 * np.expm1(returns[shocks].to_numpy()),
-        }
-    )
     line = alt.Chart(frame).mark_line(color=PRICE_COLOR, strokeWidth=2).encode(
         x=alt.X("date:T", title=None),
         y=alt.Y("usd_try:Q", title="TRY per USD"),
@@ -92,7 +83,7 @@ def overview() -> None:
     st.subheader("Largest one-day moves")
     st.write("A negative move means the lira strengthened, which is a loss for an exporter holding USD.")
     st.dataframe(
-        shock_frame.sort_values("date").assign(date=lambda d: d["date"].dt.strftime("%Y-%m-%d")),
+        shock_frame.assign(date=lambda d: d["date"].dt.strftime("%Y-%m-%d")),
         column_config={
             "usd_try": st.column_config.NumberColumn("USD/TRY", format="%.4f"),
             "move_pct": st.column_config.NumberColumn("One-day move (%)", format="%+.2f"),

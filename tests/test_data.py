@@ -7,7 +7,7 @@ import pytest
 
 from usdtry_risk.data import fetch_ecb
 from usdtry_risk.data.fetch_ecb import build_usdtry, download_ecb_csv, save_snapshot
-from usdtry_risk.data.prepare import latest_snapshot, load_snapshot, log_returns
+from usdtry_risk.data.prepare import largest_moves, latest_snapshot, load_snapshot, log_returns
 
 HEADER = "KEY,FREQ,CURRENCY,CURRENCY_DENOM,EXR_TYPE,EXR_SUFFIX,TIME_PERIOD,OBS_VALUE,OBS_STATUS"
 FAKE_ECB_CSV = "\n".join(
@@ -94,3 +94,11 @@ def test_committed_snapshot_is_valid():
     assert prices.index[0] <= pd.Timestamp("2005-01-03")
     # ECB publishes on TARGET business days only; no gap should exceed a long holiday.
     assert prices.index.to_series().diff().dt.days.max() <= 7
+
+
+def test_largest_moves_picks_biggest_absolute_moves_in_date_order():
+    idx = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-06"])
+    prices = pd.Series([10.0, 11.0, 8.8, 8.9], index=idx)
+    moves = largest_moves(prices, n=2)
+    assert list(moves.index) == list(idx[1:3])
+    assert moves["move_pct"].round(6).tolist() == [10.0, -20.0]

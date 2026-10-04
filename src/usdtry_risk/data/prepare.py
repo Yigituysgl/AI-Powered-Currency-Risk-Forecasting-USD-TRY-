@@ -49,3 +49,13 @@ def log_returns(prices: pd.Series) -> pd.Series:
     covers the weekend.
     """
     return np.log(prices).diff().dropna().rename("log_return")
+
+
+def largest_moves(prices: pd.Series, n: int = 10) -> pd.DataFrame:
+    """The ``n`` largest one-day moves by size, in date order, as simple % changes."""
+    returns = log_returns(prices)
+    dates = returns.abs().nlargest(n).index.sort_values()
+    return pd.DataFrame(
+        {"usd_try": prices[dates], "move_pct": 100 * np.expm1(returns[dates])},
+        index=dates.rename("date"),
+    )
