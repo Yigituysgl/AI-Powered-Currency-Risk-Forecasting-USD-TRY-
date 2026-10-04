@@ -1,0 +1,7 @@
+# Dashboard only: it reads saved results, so torch and pytest are not needed.
+arch==8.0.0
+matplotlib==3.11.2
+numpy==2.2.6
+pandas==2.2.2
+requests==2.32.3
+streamlit==1.65.0
