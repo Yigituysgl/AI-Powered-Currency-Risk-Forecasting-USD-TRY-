@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from usdtry_risk.data.prepare import log_returns
+from usdtry_risk.hedging.evaluate_hedging import policy_vs_call_money
 from usdtry_risk.hedging.forward import cip_forward
 from usdtry_risk.hedging.simulate import (
     build_receivables,
@@ -70,6 +71,14 @@ def test_dynamic_ratio_follows_the_median_rule():
     returns = pd.Series(np.concatenate([calm, wild]), index=dates)
     ratio = dynamic_hedge_ratio(returns, pd.DatetimeIndex([dates[350], dates[599]]))
     assert ratio.tolist() == [0.5, 1.0]
+
+
+def test_policy_vs_call_money_uses_rate_in_effect_at_month_end():
+    policy = pd.Series([40.0, 38.0], index=pd.to_datetime(["2025-11-20", "2026-01-23"]))
+    call_money = pd.Series([38.5, 38.5, 36.5], index=pd.to_datetime(["2025-11-01", "2025-12-01", "2026-01-01"]))
+    table = policy_vs_call_money(policy, call_money, "2025-11")
+    assert table["policy_at_month_end"].tolist() == [40.0, 40.0, 38.0]
+    assert table["gap"].tolist() == pytest.approx([-1.5, -1.5, -1.5])
 
 
 def test_summarize_measures():
