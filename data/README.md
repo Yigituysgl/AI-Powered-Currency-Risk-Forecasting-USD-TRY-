@@ -58,3 +58,29 @@ This project is for research and education, not for trading or pricing.
   are expressed in new lira (1 TRY = 1,000,000 old TRL).
 - Tail events such as the February 2001 float and the 2018 and 2021 crises
   are real and are kept.
+
+## Interest rates
+
+Downloaded with `python -m usdtry_risk.data.fetch_rates`, one snapshot and
+manifest per series, loaded through `usdtry_risk.data.rates.rate_series`,
+which refuses a file that does not match its manifest. Values are stored as
+published.
+
+| File prefix            | Series                                                    | Source |
+|------------------------|-----------------------------------------------------------|--------|
+| `usd_dtb3_fred_`       | 3-month US Treasury bill, secondary market, discount basis, daily | Board of Governors of the Federal Reserve System (US), H.15, via [FRED DTB3](https://fred.stlouisfed.org/series/DTB3) |
+| `try_policy_tcmb_`     | TCMB one-week repo lending rate (policy rate), one row per change | [CBRT, 1 Week Repo](https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Main+Menu/Core+Functions/Monetary+Policy/Central+Bank+Interest+Rates/1+Week+Repo) |
+| `try_callmoney_fred_`  | Turkish call money / interbank overnight rate, monthly    | OECD Main Economic Indicators, via [FRED IRSTCI01TRM156N](https://fred.stlouisfed.org/series/IRSTCI01TRM156N) |
+
+- **FRED DTB3:** public domain, citation requested. Empty values are US
+  non-business days. A few values are slightly negative (2015, 2020).
+- **TCMB:** the CBRT allows its published information to be quoted with a
+  specific reference; commercial use needs its prior written permission
+  ([CBRT disclaimer](https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Bottom+Menu/Other/Disclaimer)).
+  The one-week repo rate starts on 2010-05-20. The page lists dates in
+  `DD.MM.YYYY` form and at least one rate with a comma decimal (`5,00`), so
+  the file keeps the published strings plus parsed `date` and `rate_pct`
+  columns derived by this project.
+- **OECD call money rate:** copyrighted by the OECD, citation required. Each
+  value is dated the first day of the month it refers to, but it is
+  published later.

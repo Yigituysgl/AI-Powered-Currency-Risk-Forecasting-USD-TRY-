@@ -1,0 +1,14 @@
+{
+  "source": "OECD, Main Economic Indicators, Interest Rates: Immediate Rates (< 24 Hours): Call Money/Interbank Rate: Total for Turkey [IRSTCI01TRM156N], retrieved from FRED, Federal Reserve Bank of St. Louis",
+  "source_url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=IRSTCI01TRM156N",
+  "attribution": "Source: OECD Main Economic Indicators via FRED.",
+  "download_date": "2026-10-04T12:56:28+00:00",
+  "row_count": 483,
+  "first_date": "1986-05-01",
+  "last_date": "2026-07-01",
+  "columns": {
+    "date": "first day of the month the value refers to",
+    "value": "percent per year, monthly, as published"
+  },
+  "sha256": "2dfe40dabbdecedafce3227a999bf0ef98317871cf1d886ac88dd3ae2cfa7c5c"
+}

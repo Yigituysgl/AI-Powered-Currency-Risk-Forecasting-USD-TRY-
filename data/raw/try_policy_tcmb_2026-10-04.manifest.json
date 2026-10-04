@@ -1,0 +1,17 @@
+{
+  "source": "Central Bank of the Republic of Turkiye (CBRT), Central Bank Interest Rates, 1 Week Repo",
+  "source_url": "https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Main+Menu/Core+Functions/Monetary+Policy/Central+Bank+Interest+Rates/1+Week+Repo",
+  "attribution": "Source: Central Bank of the Republic of Turkiye (CBRT).",
+  "download_date": "2026-10-04T12:56:28+00:00",
+  "row_count": 57,
+  "first_date": "2010-05-20",
+  "last_date": "2026-01-23",
+  "columns": {
+    "date_published": "date of the rate change, DD.MM.YYYY, as published",
+    "borrowing": "borrowing rate, as published",
+    "lending": "one-week repo lending rate in percent, as published",
+    "date": "date_published as an ISO date, derived by this project",
+    "rate_pct": "lending as a number (comma read as decimal point), derived by this project"
+  },
+  "sha256": "c0ecf0f33073fc8b6714a87d10afee04bd90f56d04a2e54de394b5208879498e"
+}
