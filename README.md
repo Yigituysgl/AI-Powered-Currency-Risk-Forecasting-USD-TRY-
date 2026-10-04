@@ -1,5 +1,7 @@
 # USD/TRY Currency Risk & Hedging Tool
 
+[![tests](https://github.com/Yigituysgl/usdtry-currency-risk-hedging/actions/workflows/tests.yml/badge.svg)](https://github.com/Yigituysgl/usdtry-currency-risk-hedging/actions/workflows/tests.yml)
+
 **The question:** a Turkish exporter is paid in US dollars and converts them to
 lira. If the lira strengthens before the dollars arrive, it receives fewer
 lira. Can we predict where USD/TRY goes next, how much could be lost, and
