@@ -10,6 +10,7 @@ import argparse
 import pandas as pd
 
 from usdtry_risk.data.prepare import load_snapshot, log_returns
+from usdtry_risk.results import save_table
 from usdtry_risk.risk.backtest import backtest_var
 from usdtry_risk.risk.var import EXPOSURE_USD, historical_var, parametric_var, var_try
 from usdtry_risk.risk.volatility import (
@@ -50,6 +51,7 @@ def current_var(prices: pd.Series, returns: pd.Series, garch_params: pd.Series) 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--first-year", type=int, default=2010)
+    parser.add_argument("--save", action="store_true", help="write tables to reports/results")
     args = parser.parse_args()
 
     prices = load_snapshot()
@@ -70,6 +72,12 @@ def main() -> None:
         }
         backtests[confidence] = backtest_var(returns, forecasts, confidence, start=str(args.first_year))
     a = backtests[CONFIDENCES[0]].attrs
+    if args.save:
+        current.attrs.update(date=prices.index[-1], usd_try=prices.iloc[-1], exposure_usd=EXPOSURE_USD)
+        save_table(current, "var_current")
+        table = pd.concat(backtests, names=["confidence", "model"])
+        table.attrs.update(a)
+        save_table(table, "var_backtest")
 
     with pd.option_context(
         "display.float_format", "{:,.4f}".format, "display.width", 160, "display.max_columns", None

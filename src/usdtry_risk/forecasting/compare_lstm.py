@@ -18,12 +18,14 @@ from usdtry_risk.forecasting.metrics import (
     to_price_forecast,
 )
 from usdtry_risk.forecasting.walk_forward import walk_forward_lstm
+from usdtry_risk.results import save_table
 from usdtry_risk.seed import set_seed
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--first-test-year", type=int, default=2010)
+    parser.add_argument("--save", action="store_true", help="write tables to reports/results")
     args = parser.parse_args()
 
     set_seed()
@@ -62,6 +64,10 @@ def main() -> None:
             )
         dm_rows[f"lstm vs {rival}"] = row
     dm_table = pd.DataFrame.from_dict(dm_rows, orient="index")
+    if args.save:
+        save_table(result, "forecast_scores")
+        save_table(dm_table.rename_axis("comparison"), "forecast_dm")
+        save_table(fold_table.rename_axis("year"), "forecast_folds")
 
     with pd.option_context(
         "display.float_format", "{:.4f}".format, "display.width", 160, "display.max_columns", None

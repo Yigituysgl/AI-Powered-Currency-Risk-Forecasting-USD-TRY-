@@ -20,6 +20,7 @@ from usdtry_risk.hedging.simulate import (
     hedge_outcomes,
     summarize,
 )
+from usdtry_risk.results import save_table
 
 
 def policy_vs_call_money(policy: pd.Series, call_money: pd.Series, start: str) -> pd.DataFrame:
@@ -40,6 +41,7 @@ def policy_vs_call_money(policy: pd.Series, call_money: pd.Series, start: str) -
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--start", default="2010-06")
+    parser.add_argument("--save", action="store_true", help="write tables to reports/results")
     args = parser.parse_args()
 
     prices = load_snapshot()
@@ -61,6 +63,13 @@ def main() -> None:
     outcomes["forward_100_callmoney"] = AMOUNT_USD * receivables_cm["forward"]
     result = summarize(outcomes, receivables)
     a = result.attrs
+    if args.save:
+        save_table(result.rename_axis("strategy"), "hedging_summary")
+        # Outcomes are linear in amount and hedge ratio, so these columns let the
+        # dashboard re-price any amount and ratio without the rate snapshots.
+        monthly = receivables.assign(dynamic_ratio=dynamic)
+        monthly.attrs.update(result.attrs)
+        save_table(monthly, "hedging_receivables")
 
     with pd.option_context(
         "display.float_format", "{:,.4f}".format, "display.width", 160, "display.max_columns", None
