@@ -72,6 +72,11 @@ def main() -> None:
         print(result)
         print(f"\nDynamic rule fully hedged in {int((dynamic == 1.0).sum())} of {len(dynamic)} months")
         print(
+            f"Forward above decision spot in {int((receivables['forward'] > receivables['spot']).sum())} "
+            f"of {len(receivables)}; decision spot {receivables['spot'].iloc[0]:.4f} first, "
+            f"{receivables['spot'].iloc[-1]:.4f} last"
+        )
+        print(
             "Mean rates at decision (% per year): "
             f"TRY policy {receivables['r_try'].mean():.4f}, "
             f"TRY call money {receivables_cm['r_try'].mean():.4f}, "

@@ -35,12 +35,16 @@ python -m usdtry_risk.data.fetch_ecb
 python -m usdtry_risk.forecasting.compare_lstm
 python -m usdtry_risk.forecasting.evaluate_baselines --start 2023-06-19 --end 2025-05-07
 python -m usdtry_risk.risk.evaluate_var
+python -m usdtry_risk.data.fetch_rates
+python -m usdtry_risk.hedging.evaluate_hedging
 ```
 
 `fetch_ecb` saves a new dated snapshot. `compare_lstm` runs the walk-forward
 LSTM and scores it against the baselines on the same test days.
 `evaluate_baselines` scores only the baselines, optionally on a date range.
 `evaluate_var` prints the current VaR and the 1-day VaR backtest.
+`fetch_rates` saves new dated interest-rate snapshots. `evaluate_hedging`
+runs the hedging backtest.
 
 ## Results
 
@@ -188,12 +192,121 @@ In plain terms:
   rate matches the target at both levels. At 99%, EWMA matches it with a
   lower average VaR (0.0161 against 0.0190).
 
+## Hedging simulator
+
+The same exporter books a new USD 1,000,000 receivable on the last ECB date
+of every month, due three months later. On the decision date it can sell some
+or all of the USD forward at a rate fixed today. At maturity it receives, in
+TRY, 1,000,000 × (h × F + (1 − h) × S_T), where h is the hedged share, F the
+forward rate and S_T the spot rate on the maturity date.
+
+**Forward rate:** covered interest parity with simple interest,
+F = S × (1 + r_TRY × t) / (1 + r_USD × t), where t = days to maturity / 365.
+
+- r_TRY is the TCMB one-week repo rate (the policy rate).
+- r_USD is the 3-month US Treasury bill rate (FRED DTB3).
+- Each is the latest value published before the decision date (see
+  [data/README.md](data/README.md)).
+
+Because Turkish rates were above US rates, the forward was above the
+decision-date spot for all 193 receivables. Hedging locks in that premium but
+gives up any gain if the lira weakens by more.
+
+**Strategies**, all scored on the same 193 receivables (decisions 2010-06-30
+to 2026-06-30, the last maturing on 2026-09-30). The first decision month is
+June 2010 because the TCMB one-week repo series starts on 2010-05-20.
+
+- **No hedge** (baseline): convert at the spot rate on the maturity date.
+- **50% forward:** half sold forward, half converted at maturity.
+- **100% forward:** everything sold forward.
+- **Dynamic:** 100% hedged when EWMA volatility (Stage 2) on the decision
+  date is above the median of all its values up to that date, otherwise 50%.
+  It hedged fully in 73 of the 193 months.
+
+**Measures.** The "% of spot" columns compare TRY received with the
+receivable's value at the decision-date spot. USD/TRY rose many times over
+during the period, so the TRY columns are dominated by the later, higher
+rates, and the % columns are the fair comparison across years.
+- **Worst 5%** is the 5th percentile: 5% of receivables did worse.
+- **Beat no hedge** is the share of receivables where the strategy received
+  strictly more TRY than no hedge.
+
+| Strategy                         | Mean (TRY) | Std (TRY)  | Worst 5% (TRY) | Mean (% of spot) | Std (% of spot) | Worst 5% (% of spot) | Beat no hedge |
+|----------------------------------|-----------:|-----------:|---------------:|-----------------:|----------------:|---------------------:|--------------:|
+| No hedge                         | 11,974,177 | 13,920,445 |      1,659,066 |           5.8080 |          9.8082 |              −5.5827 |           n/a |
+| 50% forward                      | 11,993,778 | 14,183,085 |      1,612,636 |           4.7344 |          5.0972 |              −1.7905 |        0.4870 |
+| 100% forward                     | 12,013,380 | 14,473,378 |      1,622,375 |           3.6608 |          3.0550 |               1.1317 |        0.4870 |
+| Dynamic (50% or 100%)            | 11,958,953 | 14,168,425 |      1,622,678 |           4.4651 |          4.1022 |               0.2779 |        0.4870 |
+| 100% forward, call-money rate    | 11,923,971 | 14,369,754 |      1,610,622 |           3.1448 |          2.9017 |               0.5459 |        0.4560 |
+
+In plain terms:
+
+- **Not hedging paid more on average but was much riskier.** Unhedged
+  receivables gained 5.8080% on average against the decision-date spot: in
+  just over half of the months the lira weakened by more than the
+  interest-rate gap.
+  They also had the widest spread (standard deviation 9.8082%) and, in the
+  worst 5% of cases, lost 5.5827% or more.
+- **A full forward hedge gave up some average gain for much more
+  certainty.** It averaged 3.6608% with a standard deviation of 3.0550%, and
+  even its worst 5% outcome was a 1.1317% gain over the decision-date spot.
+  The forward premium is known on the decision date, so the remaining
+  variation comes from the rate gap and the days to maturity changing over
+  time.
+- **50% and dynamic sit in between.** The dynamic rule ended between the 50%
+  and 100% hedges on mean, spread and worst case, as its mix of 50% and 100%
+  months would suggest.
+- **Hedging beat not hedging in 48.70% of months**, the same for all three
+  hedges. Any hedge ratio above zero comes out ahead exactly when the forward
+  rate is above the spot at maturity, so the share is the same whatever the
+  ratio.
+- **The TRY columns rank strategies differently** because they mix
+  receivables worth about TRY 1.6 million at the first decision-date spot
+  (1.5810) with ones worth about TRY 46.7 million at the last (46.6598). The standard deviation in TRY mostly measures how much the
+  exchange rate rose over 16 years, not hedging risk.
+
+**Robustness check: call-money rate.** The last row repeats the 100% forward
+hedge on the same receivables, with r_TRY taken from the OECD call-money
+rate instead of the policy rate. A monthly value is used only from the first
+day of the third month after it, because it is published weeks after the
+month ends. The call-money rate averaged 14.1007% per year at the decisions,
+against 16.1736% for the policy rate (US T-bill: 1.4949%). Its forward is
+therefore lower, giving a lower average (3.1448%), a lower worst 5% (0.5459%)
+and a lower beat rate (0.4560). The conclusions above do not change.
+
+**Is the TCMB table up to date?** Its last change is 2026-01-23, to 37.00%.
+In every month from 2025-01 to 2026-07 the OECD call-money value is exactly
+the policy rate in effect at the month end minus 1.5 points, including the
+months with rate changes. After January 2026 the call-money rate stays at
+35.50% through July 2026, the last month it covers. That matches a policy
+rate of 37.00% with no change, so there is no sign the table is missing
+changes up to July 2026. August and September 2026 cannot be checked with
+this data.
+
+### Simplifications
+
+- **No bid-ask spread, fees or margin.** Real forwards cost more than the
+  mid rate assumed here.
+- **Policy rate instead of market forward rates.** Actual USD/TRY forward
+  points come from TRY money-market and swap rates, which can differ widely
+  from the policy rate, especially offshore and in crises.
+- **Simple-interest parity.** Both rates use the same day count, and the
+  T-bill rate is used as published (discount basis) without conversion.
+- **ECB reference rates, not tradable rates.** Spot rates are the ECB
+  fixing, which the ECB discourages for transactions.
+- **No counterparty or credit risk.** Every forward is assumed to settle.
+- **Overlapping receivables.** Each receivable runs three months and a new
+  one starts every month, so neighbouring outcomes share most of their
+  exchange-rate path and are not independent. 193 receivables carry less
+  information than 193 independent trials.
+
 ## Repository layout
 
-- `src/usdtry_risk/data/`: ECB download, snapshot loading, log returns
+- `src/usdtry_risk/data/`: ECB and interest-rate downloads, snapshot loading, log returns
 - `src/usdtry_risk/forecasting/`: baselines, LSTM, walk-forward evaluation, metrics
 - `src/usdtry_risk/risk/`: EWMA and GARCH volatility, VaR, backtest and Kupiec test
-- `tests/`: data, baseline, LSTM, volatility, VaR and backtest tests, including
+- `src/usdtry_risk/hedging/`: forward rates, receivable simulation, hedging backtest
+- `tests/`: data, baseline, LSTM, volatility, VaR, backtest, rate and hedging tests, including
   lookahead and scaler-leakage checks
 - `notebooks/00_legacy_lstm.ipynb`: exploratory LSTM notebook; it reads data
   from outside the repository, so its outputs are not part of the results above
