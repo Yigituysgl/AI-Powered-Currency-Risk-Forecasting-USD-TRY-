@@ -54,6 +54,8 @@ def backtest_var(
             "breach_rate": breaches / len(frame),
             "kupiec_lr": lr,
             "kupiec_p": p,
+            # Few breaches are cheap with a huge VaR; the average level shows that cost.
+            "mean_var": float(frame[name].mean()),
         }
     result = pd.DataFrame.from_dict(rows, orient="index")
     result.attrs.update(n=len(frame), start=frame.index[0], end=frame.index[-1])
