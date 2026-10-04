@@ -1,3 +1,4 @@
+arch==8.0.0
 numpy==2.2.6
 pandas==2.2.2
 requests==2.32.3
