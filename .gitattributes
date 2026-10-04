@@ -1,2 +1,4 @@
 # Snapshots are hash-checked against their manifest: never convert line endings.
 data/raw/** -text
+# The legacy notebook is not part of the results; keep it out of GitHub language stats.
+notebooks/** linguist-documentation
