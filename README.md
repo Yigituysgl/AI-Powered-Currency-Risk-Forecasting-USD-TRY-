@@ -31,7 +31,7 @@ moved a lot. The ten largest one-day moves fall in three episodes:
 February to May 2001, August 2018, and November to December 2021. The largest
 fall for an exporter was on 2021-12-21: USD/TRY dropped 26.74% in one day.
 
-## 2. Can we forecast tomorrow's rate? No better than chance would suggest
+## 2. Can we forecast tomorrow's rate? Not better than a simple trend rule
 
 We trained an LSTM (a type of neural network for sequences) to forecast the
 next day's rate. To keep the test fair, it was retrained each year using only
